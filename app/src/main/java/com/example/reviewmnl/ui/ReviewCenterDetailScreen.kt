@@ -35,7 +35,8 @@ fun ReviewCenterDetailScreen(
     centerName: String,
     isLoggedIn: Boolean,
     onBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToMessages: () -> Unit
 ) {
     val center = reviewCenters.find { it.name == centerName } ?: reviewCenters[0]
 
@@ -86,7 +87,15 @@ fun ReviewCenterDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf("HOME", "CONTACT", "SEARCH", "MESSAGES").forEach { link ->
-                            Text(text = link, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = link, 
+                                color = Color.White, 
+                                fontSize = 10.sp, 
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable {
+                                    if (link == "MESSAGES") onNavigateToMessages()
+                                }
+                            )
                         }
                     }
                     IconButton(
@@ -131,18 +140,11 @@ fun ReviewCenterDetailScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(text = center.name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "Description.....", color = Color.White, fontSize = 14.sp)
+                        Text(text = center.description, color = Color.White, fontSize = 14.sp)
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                            repeat(5) { i ->
-                                Icon(
-                                    Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = if (i < 4) Color(0xFFFFB400) else Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                            StarRating(rating = center.rating, starSize = 18.dp, filledColor = Color(0xFFFFB400), emptyColor = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "5.0 (10)", color = Color.White, fontSize = 12.sp)
+                            Text(text = "${center.rating} (10)", color = Color.White, fontSize = 12.sp)
                         }
                     }
                 }
@@ -160,7 +162,7 @@ fun ReviewCenterDetailScreen(
                 Text("About", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description Description.",
+                    text = center.about,
                     color = Color.White,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
@@ -173,7 +175,7 @@ fun ReviewCenterDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Category 1", "Category 1", "Category 1", "Category 1").forEach {
+                    center.programs.forEach {
                         Surface(
                             color = Color.Transparent,
                             border = BorderStroke(1.dp, Color.White),
@@ -191,7 +193,7 @@ fun ReviewCenterDetailScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
                 Button(
-                    onClick = { },
+                    onClick = { onNavigateToMessages() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BluePrimary),
                     shape = RoundedCornerShape(20.dp)
                 ) {
@@ -210,11 +212,11 @@ fun ReviewCenterDetailScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Achievements", color = BluePrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
-                    repeat(6) {
+                    center.achievements.forEach { achievement ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
                             Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFB400), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Achievement Achievement Achievement", color = BluePrimary, fontSize = 8.sp, lineHeight = 10.sp)
+                            Text(achievement, color = BluePrimary, fontSize = 8.sp, lineHeight = 10.sp)
                         }
                     }
                 }
@@ -223,22 +225,30 @@ fun ReviewCenterDetailScreen(
 
         // Footer Section
         Column(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 40.dp)
+                .navigationBarsPadding()
         ) {
-            HorizontalDivider(color = BluePrimary, thickness = 6.dp)
-            Column(modifier = Modifier.padding(16.dp)) {
+            HorizontalDivider(color = Color.White.copy(alpha = 0.3f), thickness = 0.5.dp)
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Logo", color = BluePrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("Manila, Philippines", color = Color.Gray, fontSize = 9.sp)
+                        Text("Logo", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Manila, Philippines", color = Color.White.copy(alpha = 0.7f), fontSize = 8.sp)
                     }
                     Row {
                         listOf(Icons.Default.Facebook, Icons.Default.Language, Icons.Default.PlayCircle, Icons.Default.Email).forEach { icon ->
-                            Icon(icon, contentDescription = null, tint = BluePrimary, modifier = Modifier.padding(horizontal = 3.dp).size(18.dp))
+                            Icon(
+                                imageVector = icon, 
+                                contentDescription = null, 
+                                tint = Color.White, 
+                                modifier = Modifier.padding(horizontal = 4.dp).size(14.dp)
+                            )
                         }
                     }
                 }

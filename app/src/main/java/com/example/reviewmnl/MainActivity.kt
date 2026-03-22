@@ -14,6 +14,9 @@ import com.example.reviewmnl.ui.HomeScreen
 import com.example.reviewmnl.ui.LoginScreen
 import com.example.reviewmnl.ui.SearchScreen
 import com.example.reviewmnl.ui.ReviewCenterDetailScreen
+import com.example.reviewmnl.ui.MessagesScreen
+import com.example.reviewmnl.ui.ChatDetailScreen
+import com.example.reviewmnl.ui.ContactScreen
 import com.example.reviewmnl.ui.theme.ReviewmnlTheme
 
 class MainActivity : ComponentActivity() {
@@ -45,6 +48,19 @@ fun ReviewMnlApp() {
                 },
                 onNavigateToSearch = {
                     navController.navigate("search")
+                },
+                onNavigateToDetail = { centerName ->
+                    navController.navigate("detail/$centerName")
+                },
+                onNavigateToMessages = {
+                    if (isLoggedIn) {
+                        navController.navigate("messages")
+                    } else {
+                        Toast.makeText(context, "Please login to view messages", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onNavigateToContact = {
+                    navController.navigate("contact")
                 }
             )
         }
@@ -77,8 +93,33 @@ fun ReviewMnlApp() {
                     navController.navigate("home") {
                         popUpTo("home") { inclusive = true }
                     }
+                },
+                onNavigateToMessages = {
+                    if (isLoggedIn) {
+                        navController.navigate("messages")
+                    } else {
+                        Toast.makeText(context, "Please login to message", Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
+        }
+        composable("messages") {
+            MessagesScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToChat = { chatName ->
+                    navController.navigate("chatDetail/$chatName")
+                }
+            )
+        }
+        composable("chatDetail/{chatName}") { backStackEntry ->
+            val chatName = backStackEntry.arguments?.getString("chatName") ?: ""
+            ChatDetailScreen(
+                chatName = chatName,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("contact") {
+            ContactScreen(onBack = { navController.popBackStack() })
         }
     }
 }
