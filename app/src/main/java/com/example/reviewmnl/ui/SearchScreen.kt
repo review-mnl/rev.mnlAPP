@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -31,6 +33,8 @@ import kotlin.math.roundToInt
 @Composable
 fun SearchScreen(
     onBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToContact: () -> Unit,
     onNavigateToDetail: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -50,6 +54,7 @@ fun SearchScreen(
             .fillMaxSize()
             .background(BluePrimary)
             .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
     ) {
         // Search Header
         Box(
@@ -187,12 +192,12 @@ fun SearchScreen(
                 }
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp),
+            // Results List
+            Column(
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(filteredCenters) { center ->
+                filteredCenters.forEach { center ->
                     LargeReviewCenterCard(
                         center = center,
                         onClick = { onNavigateToDetail(center.name) }
@@ -200,5 +205,14 @@ fun SearchScreen(
                 }
             }
         }
+        
+        // Footer Section
+        SimpleFooter(
+            onNavigateToHome = onNavigateToHome,
+            onNavigateToContact = onNavigateToContact,
+            onNavigateToSearch = { /* Already here */ },
+            backgroundColor = BluePrimary,
+            contentColor = Color.White
+        )
     }
 }

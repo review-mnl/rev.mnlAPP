@@ -61,6 +61,11 @@ fun ReviewMnlApp() {
                 },
                 onNavigateToContact = {
                     navController.navigate("contact")
+                },
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
                 }
             )
         }
@@ -77,6 +82,14 @@ fun ReviewMnlApp() {
         composable("search") {
             SearchScreen(
                 onBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                onNavigateToContact = {
+                    navController.navigate("contact")
+                },
                 onNavigateToDetail = { centerName ->
                     navController.navigate("detail/$centerName")
                 }
@@ -88,6 +101,17 @@ fun ReviewMnlApp() {
                 centerName = centerName,
                 isLoggedIn = isLoggedIn,
                 onBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                onNavigateToContact = {
+                    navController.navigate("contact")
+                },
+                onNavigateToSearch = {
+                    navController.navigate("search")
+                },
                 onLogout = {
                     isLoggedIn = false
                     navController.navigate("home") {
@@ -119,7 +143,17 @@ fun ReviewMnlApp() {
             )
         }
         composable("contact") {
-            ContactScreen(onBack = { navController.popBackStack() })
+            ContactScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToHome = { navController.navigate("home") { popUpTo("home") { inclusive = true } } },
+                onNavigateToSearch = { navController.navigate("search") },
+                onNavigateToLogin = { navController.navigate("login") },
+                isLoggedIn = isLoggedIn,
+                onLogout = { 
+                    isLoggedIn = false 
+                    navController.navigate("home") { popUpTo("home") { inclusive = true } }
+                }
+            )
         }
     }
 }

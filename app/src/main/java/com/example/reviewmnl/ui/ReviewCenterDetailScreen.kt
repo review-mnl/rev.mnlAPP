@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
@@ -35,6 +36,9 @@ fun ReviewCenterDetailScreen(
     centerName: String,
     isLoggedIn: Boolean,
     onBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToContact: () -> Unit,
+    onNavigateToSearch: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToMessages: () -> Unit
 ) {
@@ -50,7 +54,7 @@ fun ReviewCenterDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(350.dp)
+                .height(320.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.viewcenterbg),
@@ -64,7 +68,7 @@ fun ReviewCenterDetailScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(Color.Transparent, BluePrimary.copy(alpha = 0.5f), BluePrimary),
-                            startY = 400f
+                            startY = 350f
                         )
                     )
             )
@@ -76,75 +80,118 @@ fun ReviewCenterDetailScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 // Top Nav
-                Box(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(Color.White).align(Alignment.CenterStart))
+                    Text(
+                        text = "review.mnl",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onNavigateToHome() }
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     Row(
-                        modifier = Modifier.wrapContentWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf("HOME", "CONTACT", "SEARCH", "MESSAGES").forEach { link ->
                             Text(
                                 text = link, 
                                 color = Color.White, 
-                                fontSize = 10.sp, 
+                                fontSize = 9.sp, 
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable {
-                                    if (link == "MESSAGES") onNavigateToMessages()
-                                }
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier
+                                    .padding(horizontal = 6.dp)
+                                    .clickable {
+                                        when(link) {
+                                            "HOME" -> onNavigateToHome()
+                                            "CONTACT" -> onNavigateToContact()
+                                            "SEARCH" -> onNavigateToSearch()
+                                            "MESSAGES" -> onNavigateToMessages()
+                                        }
+                                    }
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { if (isLoggedIn) onLogout() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
-                    IconButton(
-                        onClick = { if (isLoggedIn) onLogout() },
-                        modifier = Modifier.size(36.dp).align(Alignment.CenterEnd)
-                    ) {
-                        Icon(
-                            imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Back Button
-                Button(
+                Surface(
                     onClick = onBack,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BluePrimary),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    color = Color.White,
+                    contentColor = BluePrimary,
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(32.dp)
+                    modifier = Modifier.height(32.dp).width(80.dp)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Back", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Back", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 // Center Info Row
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
+                            .size(70.dp)
                             .clip(CircleShape)
-                            .background(Color.LightGray)
-                            .border(4.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                    )
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .border(2.dp, Color.White, CircleShape)
+                    ) {
+                        Icon(
+                            Icons.Default.School, 
+                            contentDescription = null, 
+                            tint = Color.White, 
+                            modifier = Modifier.size(36.dp).align(Alignment.Center)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = center.name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                        Text(text = center.description, color = Color.White, fontSize = 14.sp)
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                            StarRating(rating = center.rating, starSize = 18.dp, filledColor = Color(0xFFFFB400), emptyColor = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "${center.rating} (10)", color = Color.White, fontSize = 12.sp)
+                        Text(
+                            text = center.name, 
+                            color = Color.White, 
+                            fontSize = 22.sp, 
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 26.sp
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = center.location, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                            StarRating(rating = center.rating, starSize = 14.dp, filledColor = Color(0xFFFFB400), emptyColor = Color.White.copy(alpha = 0.4f))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "${center.rating} (10 Reviews)", color = Color.White, fontSize = 11.sp)
                         }
                     }
                 }
@@ -152,107 +199,102 @@ fun ReviewCenterDetailScreen(
         }
 
         // Content Section
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(BluePrimary)
-                .padding(16.dp)
-        ) {
-            Column(modifier = Modifier.weight(0.6f)) {
-                Text("About", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = center.about,
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("Programs Offered", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    center.programs.forEach {
-                        Surface(
-                            color = Color.Transparent,
-                            border = BorderStroke(1.dp, Color.White),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text(
-                                text = it,
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = { onNavigateToMessages() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BluePrimary),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text("Schedule a review", fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Achievements Card
-            Card(
-                modifier = Modifier.weight(0.4f),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Achievements", color = BluePrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    center.achievements.forEach { achievement ->
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                            Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFB400), modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(achievement, color = BluePrimary, fontSize = 8.sp, lineHeight = 10.sp)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Footer Section
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 40.dp)
-                .navigationBarsPadding()
+                .background(BluePrimary)
+                .padding(20.dp)
         ) {
-            HorizontalDivider(color = Color.White.copy(alpha = 0.3f), thickness = 0.5.dp)
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("Logo", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("Manila, Philippines", color = Color.White.copy(alpha = 0.7f), fontSize = 8.sp)
+            // About Section
+            Text("About", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = center.about,
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Justify
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                // Left Side: Programs
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Programs Offered", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        center.programs.forEach {
+                            Surface(
+                                color = Color.White.copy(alpha = 0.1f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                                shape = RoundedCornerShape(20.dp)
+                            ) {
+                                Text(
+                                    text = it,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
                     }
-                    Row {
-                        listOf(Icons.Default.Facebook, Icons.Default.Language, Icons.Default.PlayCircle, Icons.Default.Email).forEach { icon ->
-                            Icon(
-                                imageVector = icon, 
-                                contentDescription = null, 
-                                tint = Color.White, 
-                                modifier = Modifier.padding(horizontal = 4.dp).size(14.dp)
-                            )
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(
+                        onClick = { onNavigateToMessages() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BluePrimary),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Schedule a Review", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Right Side: Achievements Card (now more compact)
+                Card(
+                    modifier = Modifier.width(140.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Awards", color = BluePrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        center.achievements.take(4).forEach { achievement ->
+                            Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(vertical = 4.dp)) {
+                                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFB400), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    achievement, 
+                                    color = BluePrimary, 
+                                    fontSize = 9.sp, 
+                                    lineHeight = 11.sp,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
             }
+            
+            Spacer(modifier = Modifier.height(24.dp))
         }
+
+        // Footer Section
+        SimpleFooter(
+            onNavigateToHome = onNavigateToHome,
+            onNavigateToContact = onNavigateToContact,
+            onNavigateToSearch = onNavigateToSearch,
+            backgroundColor = BluePrimary,
+            contentColor = Color.White
+        )
     }
 }

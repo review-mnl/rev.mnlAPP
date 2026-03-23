@@ -191,7 +191,8 @@ fun HomeScreen(
     onNavigateToSearch: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToMessages: () -> Unit,
-    onNavigateToContact: () -> Unit
+    onNavigateToContact: () -> Unit,
+    onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -199,7 +200,6 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
         // Hero Section
@@ -228,56 +228,59 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 // Top Nav
-                Box(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .align(Alignment.CenterStart)
+                    Text(
+                        text = "review.mnl",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onNavigateToHome() }
                     )
-                    
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     Row(
-                        modifier = Modifier.wrapContentWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf("HOME", "CONTACT", "SEARCH", "MESSAGES").forEach { link ->
                             Text(
                                 text = link, 
                                 color = Color.White, 
-                                fontSize = 10.sp, 
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold, 
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier
-                                    .clickable { 
+                                    .padding(horizontal = 6.dp)
+                                    .clickable {
                                         when (link) {
                                             "SEARCH" -> if (isLoggedIn) onNavigateToSearch() else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show()
                                             "MESSAGES" -> onNavigateToMessages()
                                             "CONTACT" -> onNavigateToContact()
+                                            "HOME" -> onNavigateToHome()
                                         }
                                     }
                             )
                         }
-                    }
 
-                    IconButton(
-                        onClick = { if (isLoggedIn) onLogout() else onNavigateToLogin() },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .align(Alignment.CenterEnd)
-                    ) {
-                        Icon(
-                            imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        IconButton(
+                            onClick = { if (isLoggedIn) onLogout() else onNavigateToLogin() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
 
@@ -409,39 +412,11 @@ fun HomeScreen(
         }
 
         // Footer Section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 80.dp)
-                .navigationBarsPadding()
-        ) {
-            HorizontalDivider(color = BluePrimary.copy(alpha = 0.5f), thickness = 0.5.dp)
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(), 
-                    horizontalArrangement = Arrangement.SpaceBetween, 
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("Logo", color = BluePrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("Manila, Philippines", color = Color.Gray, fontSize = 8.sp)
-                    }
-                    Row {
-                        listOf(Icons.Default.Facebook, Icons.Default.Language, Icons.Default.PlayCircle, Icons.Default.Email).forEach { icon ->
-                            Icon(
-                                imageVector = icon, 
-                                contentDescription = null, 
-                                tint = BluePrimary, 
-                                modifier = Modifier
-                                    .padding(horizontal = 4.dp)
-                                    .size(14.dp)
-                                    .clickable { if (icon == Icons.Default.Email) onNavigateToContact() }
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        SimpleFooter(
+            onNavigateToHome = onNavigateToHome,
+            onNavigateToContact = onNavigateToContact,
+            onNavigateToSearch = onNavigateToSearch
+        )
     }
 }
 
