@@ -288,6 +288,13 @@ fun ContactScreen(
         }
 
         // Footer
+        // Blue separator to visually separate main content from the footer
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .background(BluePrimary)
+        )
         SimpleFooter(
             onNavigateToHome = onNavigateToHome,
             onNavigateToContact = { /* Already here */ },

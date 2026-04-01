@@ -29,7 +29,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,7 +37,6 @@ import com.example.reviewmnl.R
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.BorderColor
 import kotlin.math.floor
-import kotlin.math.roundToInt
 
 // Data models
 data class Category(val name: String, val icon: ImageVector)
@@ -186,12 +184,14 @@ fun StarRating(rating: Double, starSize: Dp = 14.dp, filledColor: Color = Color(
 @Composable
 fun HomeScreen(
     isLoggedIn: Boolean,
+    currentUser: com.example.reviewmnl.ui.User?,
     onNavigateToLogin: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToMessages: () -> Unit,
     onNavigateToContact: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
@@ -249,7 +249,13 @@ fun HomeScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        listOf("HOME", "CONTACT", "SEARCH", "MESSAGES").forEach { link ->
+                        // On the Home screen we don't show HOME link (we're already there)
+                        val headerLinks = buildList {
+                            add("CONTACT")
+                            add("SEARCH")
+                            if (isLoggedIn) add("MESSAGES")
+                        }
+                        headerLinks.forEach { link ->
                             Text(
                                 text = link, 
                                 color = Color.White, 
@@ -270,23 +276,35 @@ fun HomeScreen(
                             )
                         }
 
+                        var showAccountMenu by remember { mutableStateOf(false) }
                         IconButton(
-                            onClick = { if (isLoggedIn) onLogout() else onNavigateToLogin() },
+                            onClick = { if (isLoggedIn) showAccountMenu = true else onNavigateToLogin() },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.AccountCircle,
+                                imageVector = Icons.Default.AccountCircle,
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
+                        }
+
+                        DropdownMenu(expanded = showAccountMenu, onDismissRequest = { showAccountMenu = false }) {
+                            DropdownMenuItem(text = { Text("My Profile") }, onClick = {
+                                showAccountMenu = false
+                                onNavigateToProfile()
+                            })
+                            DropdownMenuItem(text = { Text("Logout") }, onClick = {
+                                showAccountMenu = false
+                                onLogout()
+                            })
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Search Bar Trigger
+                // Search Bar Trigger - simple clickable Surface
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -297,18 +315,20 @@ fun HomeScreen(
                     shadowElevation = 2.dp
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 20.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Search review centers...", 
-                            color = Color.Gray, 
-                            fontSize = 14.sp, 
+                            text = "Search review centers...",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -412,6 +432,13 @@ fun HomeScreen(
         }
 
         // Footer Section
+        // Blue separator to visually separate main content from the footer
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .background(BluePrimary)
+        )
         SimpleFooter(
             onNavigateToHome = onNavigateToHome,
             onNavigateToContact = onNavigateToContact,

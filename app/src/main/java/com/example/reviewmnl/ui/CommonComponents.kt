@@ -3,7 +3,6 @@ package com.example.reviewmnl.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,11 +26,9 @@ fun SimpleFooter(
         modifier = modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(top = 40.dp, bottom = 24.dp)
+            .padding(top = 16.dp, bottom = 24.dp)
             .navigationBarsPadding()
     ) {
-        HorizontalDivider(color = contentColor.copy(alpha = 0.2f), thickness = 0.5.dp)
-        Spacer(modifier = Modifier.height(24.dp))
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

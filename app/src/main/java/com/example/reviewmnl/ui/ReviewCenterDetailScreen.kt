@@ -15,7 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,10 +35,12 @@ import com.example.reviewmnl.ui.theme.BluePrimary
 fun ReviewCenterDetailScreen(
     centerName: String,
     isLoggedIn: Boolean,
+    currentUser: com.example.reviewmnl.ui.User?,
     onBack: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToContact: () -> Unit,
     onNavigateToSearch: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToMessages: () -> Unit
 ) {
@@ -97,7 +99,13 @@ fun ReviewCenterDetailScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        listOf("HOME", "CONTACT", "SEARCH", "MESSAGES").forEach { link ->
+                        val headerLinks = buildList {
+                            add("HOME")
+                            add("CONTACT")
+                            add("SEARCH")
+                            if (isLoggedIn) add("MESSAGES")
+                        }
+                        headerLinks.forEach { link ->
                             Text(
                                 text = link, 
                                 color = Color.White, 
@@ -118,16 +126,28 @@ fun ReviewCenterDetailScreen(
                             )
                         }
 
+                        var showAccountMenu by remember { mutableStateOf(false) }
                         IconButton(
-                            onClick = { if (isLoggedIn) onLogout() },
+                            onClick = { if (isLoggedIn) showAccountMenu = true else onNavigateToProfile() },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.AccountCircle,
+                                imageVector = Icons.Default.AccountCircle,
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
+                        }
+
+                        DropdownMenu(expanded = showAccountMenu, onDismissRequest = { showAccountMenu = false }) {
+                            DropdownMenuItem(text = { Text("My Profile") }, onClick = {
+                                showAccountMenu = false
+                                onNavigateToProfile()
+                            })
+                            DropdownMenuItem(text = { Text("Logout") }, onClick = {
+                                showAccountMenu = false
+                                onLogout()
+                            })
                         }
                     }
                 }
@@ -289,12 +309,17 @@ fun ReviewCenterDetailScreen(
         }
 
         // Footer Section
+        // Blue separator to visually separate main content from the footer
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .background(BluePrimary)
+        )
         SimpleFooter(
             onNavigateToHome = onNavigateToHome,
             onNavigateToContact = onNavigateToContact,
-            onNavigateToSearch = onNavigateToSearch,
-            backgroundColor = BluePrimary,
-            contentColor = Color.White
+            onNavigateToSearch = onNavigateToSearch
         )
     }
 }
