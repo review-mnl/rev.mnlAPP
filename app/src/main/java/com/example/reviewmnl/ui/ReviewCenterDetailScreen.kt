@@ -1,5 +1,8 @@
 package com.example.reviewmnl.ui
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,13 +25,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.reviewmnl.R
 import com.example.reviewmnl.ui.theme.BluePrimary
+import java.util.*
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -45,6 +52,8 @@ fun ReviewCenterDetailScreen(
     onNavigateToMessages: () -> Unit
 ) {
     val center = reviewCenters.find { it.name == centerName } ?: reviewCenters[0]
+    val context = LocalContext.current
+    var showBookingDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -233,7 +242,7 @@ fun ReviewCenterDetailScreen(
                 color = Color.White.copy(alpha = 0.9f),
                 fontSize = 13.sp,
                 lineHeight = 20.sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Justify
+                textAlign = TextAlign.Justify
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -265,7 +274,10 @@ fun ReviewCenterDetailScreen(
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     Button(
-                        onClick = { onNavigateToMessages() },
+                        onClick = { 
+                            if (isLoggedIn) showBookingDialog = true 
+                            else Toast.makeText(context, "Please login to book an appointment", Toast.LENGTH_SHORT).show()
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BluePrimary),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.height(44.dp)
@@ -321,5 +333,203 @@ fun ReviewCenterDetailScreen(
             onNavigateToContact = onNavigateToContact,
             onNavigateToSearch = onNavigateToSearch
         )
+
+        if (showBookingDialog) {
+            BookingDialog(
+                centerName = center.name,
+                onDismiss = { showBookingDialog = false },
+                onConfirm = { date, time, program, payment ->
+                    showBookingDialog = false
+                    Toast.makeText(context, "Appointment booked for $program on $date at $time. Paid via $payment.", Toast.LENGTH_LONG).show()
+                    onNavigateToMessages()
+                },
+                programs = center.programs
+            )
+        }
+    }
+}
+
+@Composable
+fun BookingDialog(
+    centerName: String,
+    programs: List<String>,
+    onDismiss: () -> Unit,
+    onConfirm: (date: String, time: String, program: String, payment: String) -> Unit
+) {
+    var selectedDate by remember { mutableStateOf("") }
+    var selectedTime by remember { mutableStateOf("") }
+    var selectedProgram by remember { mutableStateOf(programs.firstOrNull() ?: "") }
+    var selectedPayment by remember { mutableStateOf("GCash") }
+    var expanded by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Book Appointment",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BluePrimary
+                )
+                Text(
+                    text = "Schedule your visit to $centerName",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                )
+
+                // Program Selection
+                Text("Select Program", modifier = Modifier.fillMaxWidth(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BluePrimary)
+                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, Color.LightGray),
+                        color = Color.White
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = selectedProgram, modifier = Modifier.weight(1f), fontSize = 14.sp)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                    }
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        programs.forEach { program ->
+                            DropdownMenuItem(
+                                text = { Text(program) },
+                                onClick = {
+                                    selectedProgram = program
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Date Picker
+                Button(
+                    onClick = {
+                        DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                selectedDate = "${month + 1}/$dayOfMonth/$year"
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5), contentColor = Color.Black),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = if (selectedDate.isEmpty()) "Select Date" else selectedDate, fontSize = 14.sp)
+                }
+
+                // Time Picker
+                Button(
+                    onClick = {
+                        TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val ampm = if (hourOfDay < 12) "AM" else "PM"
+                                val hour = if (hourOfDay % 12 == 0) 12 else hourOfDay % 12
+                                selectedTime = String.format(Locale.US, "%02d:%02d %s", hour, minute, ampm)
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            false
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5), contentColor = Color.Black),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = if (selectedTime.isEmpty()) "Select Time" else selectedTime, fontSize = 14.sp)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Payment Method
+                Text("Payment Method", modifier = Modifier.fillMaxWidth(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BluePrimary)
+                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { selectedPayment = "GCash" }.padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = selectedPayment == "GCash", onClick = { selectedPayment = "GCash" }, colors = RadioButtonDefaults.colors(selectedColor = BluePrimary))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("GCash", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Box(modifier = Modifier.size(24.dp).background(Color(0xFF007DFE), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                            Text("G", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { selectedPayment = "Cash" }.padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = selectedPayment == "Cash", onClick = { selectedPayment = "Cash" }, colors = RadioButtonDefaults.colors(selectedColor = BluePrimary))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cash on Site", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.Payments, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+                    }
+                }
+
+                if (selectedPayment == "GCash") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F7FF)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Booking Fee: ₱50.00", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = BluePrimary)
+                            Text("Pay to: 0912 345 6789 (Z.T.C.)", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = { onConfirm(selectedDate, selectedTime, selectedProgram, selectedPayment) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
+                        enabled = selectedDate.isNotEmpty() && selectedTime.isNotEmpty()
+                    ) {
+                        Text("Confirm")
+                    }
+                }
+            }
+        }
     }
 }

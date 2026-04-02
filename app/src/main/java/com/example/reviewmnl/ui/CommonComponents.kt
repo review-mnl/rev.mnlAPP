@@ -8,10 +8,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.ui.theme.BluePrimary
+
+@Composable
+fun LogoText(
+    modifier: Modifier = Modifier,
+    fontSize: androidx.compose.ui.unit.TextUnit = 18.sp,
+    baseColor: Color = Color.White
+) {
+    Text(
+        text = buildAnnotatedString {
+            withStyle(style = SpanStyle(color = baseColor)) {
+                append("review")
+            }
+            withStyle(style = SpanStyle(color = Color(0xFF6397FF))) { // Soft blue for .mnl
+                append(".mnl")
+            }
+        },
+        fontSize = fontSize,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier
+    )
+}
 
 @Composable
 fun SimpleFooter(
@@ -35,11 +59,9 @@ fun SimpleFooter(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "review.mnl",
-                    color = contentColor,
+                LogoText(
+                    baseColor = contentColor,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { onNavigateToHome() }
                 )
                 Text("Manila, Philippines", color = if (backgroundColor == Color.White) Color.Gray else Color.White.copy(alpha = 0.7f), fontSize = 10.sp)
