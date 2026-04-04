@@ -30,12 +30,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.reviewmnl.R
 import com.example.reviewmnl.ui.theme.BluePrimary
+import com.example.reviewmnl.ui.theme.MnlBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,10 +79,7 @@ fun ProfileScreen(
         // compute responsive sizes
         val configuration = LocalConfiguration.current
         val screenHeight = configuration.screenHeightDp.dp
-        val screenWidth = configuration.screenWidthDp.dp
         val heroHeight = (screenHeight * 0.33f).let { if (it < 260.dp) 260.dp else it }
-        val avatarSize = (screenWidth * 0.18f).let { if (it < 56.dp) 56.dp else if (it > 96.dp) 96.dp else it }
-        val avatarOverlap = avatarSize / 2
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Column {
@@ -106,8 +108,7 @@ fun ProfileScreen(
 
                     Column(
                         modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .height(heroHeight - avatarOverlap)
+                            .fillMaxSize()
                             .statusBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
@@ -116,11 +117,8 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "review.mnl",
-                                color = Color.White,
+                            LogoText(
                                 fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
                                 modifier = Modifier.clickable { onNavigateToHome() }
                             )
 
@@ -166,12 +164,35 @@ fun ProfileScreen(
                             fontSize = 24.sp,
                             fontWeight = FontWeight.SemiBold
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (isEditing) "Update your information below" else "Your account, settings and reviews",
-                            color = Color.White.copy(alpha = 0.95f),
-                            fontSize = 12.sp
-                        )
+                    }
+
+                    // Profile Circle at the bottom of hero background (Student)
+                    Surface(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 12.dp),
+                        shape = CircleShape,
+                        color = Color.White,
+                        shadowElevation = 6.dp
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            if (selectedImageUri != null) {
+                                AsyncImage(
+                                    model = selectedImageUri,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = null,
+                                    tint = BluePrimary,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -191,7 +212,24 @@ fun ProfileScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(text = user?.email ?: "-", color = Color.Gray, fontSize = 13.sp)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = user?.role ?: "Student | review.mnl member", color = Color.Gray, fontSize = 12.sp)
+                                    Text(
+                                        text = buildAnnotatedString {
+                                            val roleText = user?.role ?: "Student | review.mnl member"
+                                            if (roleText.contains("review.mnl")) {
+                                                val parts = roleText.split("review.mnl")
+                                                append(parts[0])
+                                                append("review")
+                                                withStyle(style = SpanStyle(color = MnlBlue, fontWeight = FontWeight.Bold)) {
+                                                    append(".mnl")
+                                                }
+                                                if (parts.size > 1) append(parts[1])
+                                            } else {
+                                                append(roleText)
+                                            }
+                                        },
+                                        color = Color.Gray,
+                                        fontSize = 12.sp
+                                    )
                                 }
                                 OutlinedButton(
                                     onClick = { isEditing = true },
@@ -293,35 +331,6 @@ fun ProfileScreen(
                     }
                 }
             }
-
-            // Avatar overlay
-            Surface(
-                modifier = Modifier
-                    .size(avatarSize)
-                    .align(Alignment.TopCenter)
-                    .offset(y = heroHeight - avatarSize - 8.dp),
-                shape = CircleShape,
-                color = Color.White,
-                shadowElevation = 6.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    if (selectedImageUri != null) {
-                        AsyncImage(
-                            model = selectedImageUri,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape)
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            tint = BluePrimary,
-                            modifier = Modifier.size((avatarSize * 0.68f))
-                        )
-                    }
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -392,6 +401,6 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(BluePrimary))
-        SimpleFooter(onNavigateToHome = onNavigateToHome, onNavigateToContact = onNavigateToContact, onNavigateToSearch = onNavigateToSearch)
+        SimpleFooter(onNavigateToHome = onNavigateToHome, onNavigateToContact = onNavigateToSearch, onNavigateToSearch = onNavigateToSearch)
     }
 }

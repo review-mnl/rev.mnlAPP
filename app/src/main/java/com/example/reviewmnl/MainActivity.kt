@@ -18,6 +18,8 @@ import com.example.reviewmnl.ui.MessagesScreen
 import com.example.reviewmnl.ui.ChatDetailScreen
 import com.example.reviewmnl.ui.ContactScreen
 import com.example.reviewmnl.ui.ProfileScreen
+import com.example.reviewmnl.ui.AdminDashboardScreen
+import com.example.reviewmnl.ui.UserType
 import com.example.reviewmnl.ui.theme.ReviewmnlTheme
 
 class MainActivity : ComponentActivity() {
@@ -67,7 +69,15 @@ fun ReviewMnlApp() {
                     navController.navigate("contact")
                 },
                 onNavigateToProfile = {
-                    if (isLoggedIn) navController.navigate("profile") else navController.navigate("login")
+                    if (isLoggedIn) {
+                        if (currentUser?.userType == UserType.ADMIN) {
+                            navController.navigate("admin_dashboard")
+                        } else {
+                            navController.navigate("profile")
+                        }
+                    } else {
+                        navController.navigate("login")
+                    }
                 },
                 onNavigateToHome = {
                     navController.navigate("home") {
@@ -79,12 +89,45 @@ fun ReviewMnlApp() {
         composable("login") {
             LoginScreen(
                 onBack = { navController.popBackStack() },
-                onLoginSuccess = { email ->
-                    // Set logged in state and a mock user object
+                onLoginSuccess = { email, isStudent ->
                     isLoggedIn = true
-                    currentUser = com.example.reviewmnl.ui.User(name = "Zaki The Creator", email = email)
+                    val type = if (isStudent) UserType.STUDENT else UserType.ADMIN
+                    currentUser = com.example.reviewmnl.ui.User(
+                        name = if (isStudent) "Zaki The Creator" else "Review Center Admin", 
+                        email = email,
+                        userType = type,
+                        role = if (isStudent) "Student | review.mnl member" else "Admin | review.mnl partner"
+                    )
+                    
                     Toast.makeText(context, "Welcome, $email!", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack("home", inclusive = false)
+                    
+                    if (type == UserType.ADMIN) {
+                        navController.navigate("admin_dashboard") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    } else {
+                        navController.popBackStack("home", inclusive = false)
+                    }
+                }
+            )
+        }
+        composable("admin_dashboard") {
+            AdminDashboardScreen(
+                user = currentUser,
+                onLogout = {
+                    isLoggedIn = false
+                    currentUser = null
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                onNavigateToMessages = {
+                    navController.navigate("messages")
+                },
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
                 }
             )
         }
@@ -123,7 +166,15 @@ fun ReviewMnlApp() {
                     navController.navigate("search")
                 },
                 onNavigateToProfile = {
-                    if (isLoggedIn) navController.navigate("profile") else navController.navigate("login")
+                    if (isLoggedIn) {
+                        if (currentUser?.userType == UserType.ADMIN) {
+                            navController.navigate("admin_dashboard")
+                        } else {
+                            navController.navigate("profile")
+                        }
+                    } else {
+                        navController.navigate("login")
+                    }
                 },
                 onLogout = {
                     isLoggedIn = false

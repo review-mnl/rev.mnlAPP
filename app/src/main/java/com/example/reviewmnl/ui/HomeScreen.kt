@@ -196,251 +196,258 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .verticalScroll(rememberScrollState())
     ) {
-        // Hero Section
-        Box(
+        val screenHeight = maxHeight
+
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 220.dp, max = 280.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.bg),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, BluePrimary.copy(alpha = 0.3f), BluePrimary),
-                            startY = 300f
-                        )
-                    )
-            )
-
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                modifier = Modifier.heightIn(min = screenHeight)
             ) {
-                // Top Nav
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                // Hero Section
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 220.dp, max = 280.dp)
                 ) {
-                    LogoText(
-                        fontSize = 18.sp,
-                        modifier = Modifier.clickable { onNavigateToHome() }
+                    Image(
+                        painter = painterResource(id = R.drawable.bg),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, BluePrimary.copy(alpha = 0.3f), BluePrimary),
+                                    startY = 300f
+                                )
+                            )
                     )
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        // Top Nav
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            LogoText(
+                                fontSize = 18.sp,
+                                modifier = Modifier.clickable { onNavigateToHome() }
+                            )
 
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // On the Home screen we don't show HOME link (we're already there)
+                                val headerLinks = buildList {
+                                    add("CONTACT")
+                                    add("SEARCH")
+                                    if (isLoggedIn) add("MESSAGES")
+                                }
+                                headerLinks.forEach { link ->
+                                    Text(
+                                        text = link, 
+                                        color = Color.White, 
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold, 
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier
+                                            .padding(horizontal = 6.dp)
+                                            .clickable {
+                                                when (link) {
+                                                    "SEARCH" -> if (isLoggedIn) onNavigateToSearch() else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show()
+                                                    "MESSAGES" -> onNavigateToMessages()
+                                                    "CONTACT" -> onNavigateToContact()
+                                                    "HOME" -> onNavigateToHome()
+                                                }
+                                            }
+                                    )
+                                }
+
+                                var showAccountMenu by remember { mutableStateOf(false) }
+                                IconButton(
+                                    onClick = { if (isLoggedIn) showAccountMenu = true else onNavigateToLogin() },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccountCircle,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                DropdownMenu(expanded = showAccountMenu, onDismissRequest = { showAccountMenu = false }) {
+                                    DropdownMenuItem(text = { Text("My Profile") }, onClick = {
+                                        showAccountMenu = false
+                                        onNavigateToProfile()
+                                    })
+                                    DropdownMenuItem(text = { Text("Logout") }, onClick = {
+                                        showAccountMenu = false
+                                        onLogout()
+                                    })
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Search Bar Trigger - simple clickable Surface
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .clickable { if (isLoggedIn) onNavigateToSearch() else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show() },
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            shadowElevation = 2.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Search review centers...",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+
+                // Blue Middle Section (Programs)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(BluePrimary)
+                        .padding(vertical = 16.dp)
+                ) {
+                    FlowRow(
+                        modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        maxItemsInEachRow = 4
+                    ) {
+                        categories.forEach { category ->
+                            FilterPill(
+                                label = category.name,
+                                isSelected = false,
+                                onClick = { 
+                                    if (isLoggedIn) onNavigateToSearch() 
+                                    else Toast.makeText(context, "Please login to filter", Toast.LENGTH_SHORT).show() 
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Featured Section
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // On the Home screen we don't show HOME link (we're already there)
-                        val headerLinks = buildList {
-                            add("CONTACT")
-                            add("SEARCH")
-                            if (isLoggedIn) add("MESSAGES")
-                        }
-                        headerLinks.forEach { link ->
+                        Column(modifier = Modifier.weight(0.45f)) {
                             Text(
-                                text = link, 
-                                color = Color.White, 
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold, 
+                                "Featured", 
+                                color = BluePrimary, 
+                                fontSize = 24.sp, 
+                                fontWeight = FontWeight.Bold,
                                 maxLines = 1,
-                                softWrap = false,
-                                modifier = Modifier
-                                    .padding(horizontal = 6.dp)
-                                    .clickable {
-                                        when (link) {
-                                            "SEARCH" -> if (isLoggedIn) onNavigateToSearch() else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show()
-                                            "MESSAGES" -> onNavigateToMessages()
-                                            "CONTACT" -> onNavigateToContact()
-                                            "HOME" -> onNavigateToHome()
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                "Top rated review centers based on student feedback.", 
+                                fontSize = 9.sp, 
+                                color = Color.Gray,
+                                lineHeight = 12.sp,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = BluePrimary, 
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.clickable { 
+                                    if (isLoggedIn) onNavigateToSearch() 
+                                    else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Text(
+                                    "VIEW ALL", 
+                                    color = Color.White, 
+                                    fontSize = 7.sp, 
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
+                        
+                        Box(modifier = Modifier.weight(0.55f)) {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                contentPadding = PaddingValues(end = 24.dp)
+                            ) {
+                                items(reviewCenters) { center -> 
+                                    FeaturedCard(
+                                        center = center,
+                                        onClick = {
+                                            if (isLoggedIn) onNavigateToDetail(center.name)
+                                            else Toast.makeText(context, "Please login to view details", Toast.LENGTH_SHORT).show()
                                         }
-                                    }
-                            )
-                        }
-
-                        var showAccountMenu by remember { mutableStateOf(false) }
-                        IconButton(
-                            onClick = { if (isLoggedIn) showAccountMenu = true else onNavigateToLogin() },
-                            modifier = Modifier.size(32.dp)
-                        ) {
+                                    ) 
+                                }
+                            }
                             Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.Default.ArrowCircleRight, 
+                                contentDescription = null, 
+                                tint = BluePrimary, 
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 23.dp) // Center vertically with the image in FeaturedCard
+                                    .size(24.dp)
+                                    .background(Color.White.copy(alpha = 0.8f), CircleShape)
                             )
-                        }
-
-                        DropdownMenu(expanded = showAccountMenu, onDismissRequest = { showAccountMenu = false }) {
-                            DropdownMenuItem(text = { Text("My Profile") }, onClick = {
-                                showAccountMenu = false
-                                onNavigateToProfile()
-                            })
-                            DropdownMenuItem(text = { Text("Logout") }, onClick = {
-                                showAccountMenu = false
-                                onLogout()
-                            })
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Search Bar Trigger - simple clickable Surface
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clickable { if (isLoggedIn) onNavigateToSearch() else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show() },
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Search review centers...",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                // Footer Section
+                SimpleFooter(
+                    onNavigateToHome = onNavigateToHome,
+                    onNavigateToContact = onNavigateToContact,
+                    onNavigateToSearch = onNavigateToSearch
+                )
             }
         }
-
-        // Blue Middle Section (Programs)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(BluePrimary)
-                .padding(vertical = 16.dp)
-        ) {
-            FlowRow(
-                modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                maxItemsInEachRow = 4
-            ) {
-                categories.forEach { category ->
-                    FilterPill(
-                        label = category.name,
-                        isSelected = false,
-                        onClick = { 
-                            if (isLoggedIn) onNavigateToSearch() 
-                            else Toast.makeText(context, "Please login to filter", Toast.LENGTH_SHORT).show() 
-                        }
-                    )
-                }
-            }
-        }
-
-        // Featured Section
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(0.45f)) {
-                    Text(
-                        "Featured", 
-                        color = BluePrimary, 
-                        fontSize = 24.sp, 
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        "Top rated review centers based on student feedback.", 
-                        fontSize = 9.sp, 
-                        color = Color.Gray,
-                        lineHeight = 12.sp,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        color = BluePrimary, 
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.clickable { 
-                            if (isLoggedIn) onNavigateToSearch() 
-                            else Toast.makeText(context, "Please login", Toast.LENGTH_SHORT).show()
-                        }
-                    ) {
-                        Text(
-                            "VIEW ALL", 
-                            color = Color.White, 
-                            fontSize = 7.sp, 
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Box(modifier = Modifier.weight(0.55f)) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(end = 24.dp)
-                    ) {
-                        items(reviewCenters) { center -> 
-                            FeaturedCard(
-                                center = center,
-                                onClick = {
-                                    if (isLoggedIn) onNavigateToDetail(center.name)
-                                    else Toast.makeText(context, "Please login to view details", Toast.LENGTH_SHORT).show()
-                                }
-                            ) 
-                        }
-                    }
-                    Icon(
-                        imageVector = Icons.Default.ArrowCircleRight, 
-                        contentDescription = null, 
-                        tint = BluePrimary, 
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(24.dp)
-                            .background(Color.White.copy(alpha = 0.8f), CircleShape)
-                    )
-                }
-            }
-        }
-
-        // Footer Section
-        // Blue separator to visually separate main content from the footer
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .background(BluePrimary)
-        )
-        SimpleFooter(
-            onNavigateToHome = onNavigateToHome,
-            onNavigateToContact = onNavigateToContact,
-            onNavigateToSearch = onNavigateToSearch
-        )
     }
 }
 
@@ -492,23 +499,25 @@ fun FeaturedCard(center: ReviewCenter, onClick: () -> Unit) {
             Text(
                 center.name, 
                 color = Color.White, 
-                fontSize = 10.sp, 
+                fontSize = 11.sp, 
                 fontWeight = FontWeight.Bold, 
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                center.category, 
-                color = Color.White.copy(alpha = 0.7f), 
-                fontSize = 8.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 13.sp
             )
             Spacer(modifier = Modifier.weight(1f))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StarRating(rating = center.rating, starSize = 10.dp, filledColor = Color(0xFFFFB400), emptyColor = Color.White)
                 Spacer(modifier = Modifier.weight(1f))
-                Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(Color.White))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = BluePrimary,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(Color.White, CircleShape)
+                        .padding(2.dp)
+                )
             }
         }
     }
@@ -533,17 +542,11 @@ fun LargeReviewCenterCard(center: ReviewCenter, onClick: () -> Unit = {}) {
                     fontWeight = FontWeight.Bold, 
                     fontSize = 14.sp, 
                     color = BluePrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = center.location, 
-                    color = Color.Gray, 
-                    fontSize = 9.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                StarRating(rating = center.rating, starSize = 12.dp)
+                Spacer(modifier = Modifier.height(4.dp))
+                StarRating(rating = center.rating, starSize = 14.dp)
             }
         }
     }

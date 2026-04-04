@@ -17,22 +17,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.GreyText
 import com.example.reviewmnl.ui.theme.LightBlue
+import com.example.reviewmnl.ui.theme.MnlBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onBack: () -> Unit,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String, Boolean) -> Unit
 ) {
     var isLoginMode by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
@@ -59,11 +63,8 @@ fun LoginScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
             
-            Text(
-                text = "review.mnl",
-                color = Color.White,
+            LogoText(
                 fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
@@ -87,8 +88,14 @@ fun LoginScreen(
                         fontWeight = FontWeight.Bold,
                         color = BluePrimary
                     )
+                    
                     Text(
-                        text = if (isLoginMode) "Welcome back to review.mnl" else "Create an account to get started",
+                        text = buildAnnotatedString {
+                            append(if (isLoginMode) "Welcome back to review" else "Create an account to get started with review")
+                            withStyle(style = SpanStyle(color = MnlBlue, fontWeight = FontWeight.Bold)) {
+                                append(".mnl")
+                            }
+                        },
                         fontSize = 14.sp,
                         color = GreyText,
                         modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
@@ -140,24 +147,17 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Social Login
+                    // Social Login - Only Google
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         OutlinedButton(
                             onClick = { },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("G", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                        }
-                        OutlinedButton(
-                            onClick = { },
-                            modifier = Modifier.weight(1f).height(56.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("f", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                         }
                     }
 
@@ -228,8 +228,7 @@ fun LoginScreen(
                             } else if (!isLoginMode && password != confirmPassword) {
                                 errorMessage = "Passwords do not match"
                             } else {
-                                // Logic for simulation
-                                onLoginSuccess(email)
+                                onLoginSuccess(email, isStudentSelected)
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),

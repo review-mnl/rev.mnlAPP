@@ -50,194 +50,201 @@ fun SearchScreen(
         matchesSearch && matchesCategory && matchesRating
     }
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(BluePrimary)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
     ) {
-        // Search Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.bgsearch),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, BluePrimary.copy(alpha = 0.5f), BluePrimary),
-                            startY = 200f
-                        )
-                    )
-            )
+        val screenHeight = maxHeight
 
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
+                    .heightIn(min = screenHeight)
+                    .statusBarsPadding()
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                }
-                
-                Text(
-                    text = "Search",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-                Text(
-                    text = "And Filter",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
-                )
-
-                Surface(
+                // Search Header
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
+                        .height(200.dp)
                 ) {
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxSize(),
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            color = Color.Black,
-                            fontSize = 15.sp
-                        ),
-                        cursorBrush = SolidColor(BluePrimary),
-                        decorationBox = { innerTextField ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 20.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    if (searchQuery.isEmpty()) {
-                                        Text(
-                                            text = "Search centers...",
-                                            color = Color.Gray,
-                                            fontSize = 15.sp
+                    Image(
+                        painter = painterResource(id = R.drawable.bgsearch),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, BluePrimary.copy(alpha = 0.5f), BluePrimary),
+                                    startY = 200f
+                                )
+                            )
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                        
+                        Text(
+                            text = "Search",
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                        Text(
+                            text = "And Filter",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
+                        )
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            shadowElevation = 2.dp
+                        ) {
+                            BasicTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.fillMaxSize(),
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    color = Color.Black,
+                                    fontSize = 15.sp
+                                ),
+                                cursorBrush = SolidColor(BluePrimary),
+                                decorationBox = { innerTextField ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 20.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            if (searchQuery.isEmpty()) {
+                                                Text(
+                                                    text = "Search centers...",
+                                                    color = Color.Gray,
+                                                    fontSize = 15.sp
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.Search,
+                                            contentDescription = null,
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
-                                    innerTextField()
                                 }
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = Color.Gray,
-                                    modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Filters Section
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.clickable { showFilters = !showFilters },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Filters", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Icon(imageVector = if (showFilters) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White)
+                        
+                        if (selectedCategory != null || selectedRating != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                modifier = Modifier.clickable { 
+                                    selectedCategory = null
+                                    selectedRating = null
+                                },
+                                color = Color.White.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Clear all", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            }
+                        }
+                    }
+
+                    if (showFilters) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Category", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        FlowRow(
+                            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            categories.forEach { category ->
+                                FilterPill(
+                                    label = category.name,
+                                    isSelected = selectedCategory == category.name,
+                                    onClick = { selectedCategory = if (selectedCategory == category.name) null else category.name }
                                 )
                             }
                         }
-                    )
-                }
-            }
-        }
 
-        // Filters Section
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.clickable { showFilters = !showFilters },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Filters", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Icon(imageVector = if (showFilters) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White)
-                
-                if (selectedCategory != null || selectedRating != null) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        modifier = Modifier.clickable { 
-                            selectedCategory = null
-                            selectedRating = null
-                        },
-                        color = Color.White.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(10.dp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Ratings", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(5, 4, 3, 2, 1).forEach { stars ->
+                                FilterPill(
+                                    label = "$stars " + "★".repeat(stars),
+                                    isSelected = selectedRating == stars,
+                                    onClick = { selectedRating = if (selectedRating == stars) null else stars }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Results (${filteredCenters.size})", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                        TextButton(onClick = onBack) {
+                            Text("DONE", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    // Results List
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Clear all", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                        filteredCenters.forEach { center ->
+                            LargeReviewCenterCard(
+                                center = center,
+                                onClick = { onNavigateToDetail(center.name) }
+                            )
+                        }
                     }
                 }
-            }
+                
+                Spacer(modifier = Modifier.weight(1f))
 
-            if (showFilters) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Category", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                FlowRow(
-                    modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    categories.forEach { category ->
-                        FilterPill(
-                            label = category.name,
-                            isSelected = selectedCategory == category.name,
-                            onClick = { selectedCategory = if (selectedCategory == category.name) null else category.name }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Ratings", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(5, 4, 3, 2, 1).forEach { stars ->
-                        FilterPill(
-                            label = "$stars " + "★".repeat(stars),
-                            isSelected = selectedRating == stars,
-                            onClick = { selectedRating = if (selectedRating == stars) null else stars }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Results (${filteredCenters.size})", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
-                TextButton(onClick = onBack) {
-                    Text("DONE", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            // Results List
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                filteredCenters.forEach { center ->
-                    LargeReviewCenterCard(
-                        center = center,
-                        onClick = { onNavigateToDetail(center.name) }
-                    )
-                }
+                // Footer Section
+                SimpleFooter(
+                    onNavigateToHome = onNavigateToHome,
+                    onNavigateToContact = onNavigateToContact,
+                    onNavigateToSearch = { /* Already here */ }
+                )
             }
         }
-        
-        // Footer Section
-        // Blue separator to visually separate main content from the footer
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .background(BluePrimary)
-        )
-        SimpleFooter(
-            onNavigateToHome = onNavigateToHome,
-            onNavigateToContact = onNavigateToContact,
-            onNavigateToSearch = { /* Already here */ }
-        )
     }
 }

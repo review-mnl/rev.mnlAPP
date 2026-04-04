@@ -95,11 +95,8 @@ fun ReviewCenterDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "review.mnl",
-                        color = Color.White,
+                    LogoText(
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { onNavigateToHome() }
                     )
 
