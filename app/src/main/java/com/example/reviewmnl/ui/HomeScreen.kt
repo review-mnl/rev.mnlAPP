@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
+import com.example.reviewmnl.data.model.ReviewCenterDto
+import com.example.reviewmnl.data.model.toStringList
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.BorderColor
 import kotlin.math.floor
@@ -41,14 +43,33 @@ import kotlin.math.floor
 // Data models
 data class Category(val name: String, val icon: ImageVector)
 data class ReviewCenter(
-    val name: String, 
-    val category: String, 
-    val rating: Double, 
-    val location: String, 
+    val id: Int = 0,  // API id; 0 means local/hardcoded data
+    val name: String,
+    val category: String,
+    val rating: Double,
+    val location: String,
     val description: String,
     val about: String,
     val achievements: List<String>,
-    val programs: List<String>
+    val programs: List<String>,
+    val logoUrl: String? = null
+)
+
+/**
+ * Converts a [ReviewCenterDto] received from the API into the local [ReviewCenter] model
+ * used throughout the UI.
+ */
+fun ReviewCenterDto.toReviewCenter() = ReviewCenter(
+    id = this.id,
+    name = this.businessName,
+    category = this.programs.toStringList().firstOrNull() ?: "General",
+    rating = this.avgRating,
+    location = this.address ?: "Philippines",
+    description = this.description ?: "",
+    about = this.description ?: "",
+    achievements = emptyList(),
+    programs = this.programs.toStringList(),
+    logoUrl = this.logoUrl
 )
 
 // Shared data
@@ -195,6 +216,29 @@ fun HomeScreen(
     onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
+    var featuredCenters by remember { mutableStateOf(reviewCenters) }
+
+    // Load centers from the API on first composition
+    LaunchedEffect(Unit) {
+        com.example.reviewmnl.data.api.RetrofitClient.apiService.getCenters()
+            .enqueue(object : retrofit2.Callback<List<com.example.reviewmnl.data.model.ReviewCenterDto>> {
+                override fun onResponse(
+                    call: retrofit2.Call<List<com.example.reviewmnl.data.model.ReviewCenterDto>>,
+                    response: retrofit2.Response<List<com.example.reviewmnl.data.model.ReviewCenterDto>>
+                ) {
+                    if (response.isSuccessful) {
+                        val apiList = response.body()
+                        if (!apiList.isNullOrEmpty()) {
+                            featuredCenters = apiList.map { it.toReviewCenter() }
+                        }
+                    }
+                }
+                override fun onFailure(
+                    call: retrofit2.Call<List<com.example.reviewmnl.data.model.ReviewCenterDto>>,
+                    t: Throwable
+                ) { /* keep hardcoded fallback */ }
+            })
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -414,12 +458,17 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 contentPadding = PaddingValues(end = 24.dp)
                             ) {
-                                items(reviewCenters) { center -> 
+                                items(featuredCenters) { center -> 
                                     FeaturedCard(
                                         center = center,
                                         onClick = {
-                                            if (isLoggedIn) onNavigateToDetail(center.name)
-                                            else Toast.makeText(context, "Please login to view details", Toast.LENGTH_SHORT).show()
+                                            if (isLoggedIn) {
+                                                // Use API id when available, otherwise fall back to name
+                                                val dest = if (center.id > 0) center.id.toString() else center.name
+                                                onNavigateToDetail(dest)
+                                            } else {
+                                                Toast.makeText(context, "Please login to view details", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
                                     ) 
                                 }
