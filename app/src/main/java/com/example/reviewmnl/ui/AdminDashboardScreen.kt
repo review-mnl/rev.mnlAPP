@@ -39,6 +39,8 @@ import coil.compose.AsyncImage
 import com.example.reviewmnl.R
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.MnlBlue
+import com.example.reviewmnl.data.api.RetrofitClient
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 @Composable
@@ -50,13 +52,42 @@ fun AdminDashboardScreen(
 ) {
     var selectedTab by remember { mutableStateOf("DASHBOARD") }
     var showProfileMenu by remember { mutableStateOf(false) }
-    
+
     // Profile states for editing
-    var centerName by remember { mutableStateOf("Review Cench") }
-    var centerLocation by remember { mutableStateOf("Pasay City") }
-    var centerDescription by remember { mutableStateOf("A review center located at Pasay City!") }
-    var achievements by remember { mutableStateOf(listOf("15 TOP-NOTCHERS 2025 BOARD EXAM")) }
+    var centerName by remember { mutableStateOf(user?.name ?: "Review Cench") }
+    var centerLocation by remember { mutableStateOf("Philippines") }
+    var centerDescription by remember { mutableStateOf("Welcome to our review center!") }
+    var achievements by remember { mutableStateOf(listOf("Top Notchers")) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var userLoaded by remember { mutableStateOf(false) }
+    
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    LaunchedEffect(user?.token) {
+        if (!userLoaded && user?.token != null) {
+            coroutineScope.launch {
+                try {
+                    val res = RetrofitClient.apiService.getCenterProfile("Bearer ${user.token}")
+                    if (res.isSuccessful && res.body() != null) {
+                        val body = res.body()!!
+                        
+                        centerName = body.business_name
+                        centerLocation = body.address ?: "Philippines"
+                        centerDescription = body.description ?: ""
+                        
+                        if (body.logo_url != null) {
+                            selectedImageUri = Uri.parse(body.logo_url)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to load center details", Toast.LENGTH_SHORT).show()
+                } finally {
+                    userLoaded = true
+                }
+            }
+        }
+    }
     
     var operatingHours by remember { mutableStateOf(mapOf(
         "Sun" to "Closed",
@@ -230,8 +261,43 @@ fun AdminDashboardScreen(
                             achievements = achievements,
                             selectedImageUri = selectedImageUri,
                             operatingHours = operatingHours,
-                            onUpdateCenter = { name, loc -> centerName = name; centerLocation = loc },
-                            onUpdateDescription = { centerDescription = it },
+                            onUpdateCenter = { name, loc -> 
+                                centerName = name
+                                centerLocation = loc 
+                                
+                                coroutineScope.launch {
+                                    try {
+                                        user?.token?.let {
+                                            val request = com.example.reviewmnl.data.api.models.UpdateCenterProfileRequest(
+                                                business_name = name,
+                                                address = loc,
+                                                description = centerDescription
+                                            )
+                                            RetrofitClient.apiService.updateCenterProfile("Bearer $it", request)
+                                        }
+                                    } catch (e: Exception) {
+                                        // Silent UI error fallback
+                                    }
+                                }
+                            },
+                            onUpdateDescription = { desc -> 
+                                centerDescription = desc 
+                                
+                                coroutineScope.launch {
+                                    try {
+                                        user?.token?.let {
+                                            val request = com.example.reviewmnl.data.api.models.UpdateCenterProfileRequest(
+                                                business_name = centerName,
+                                                address = centerLocation,
+                                                description = centerDescription
+                                            )
+                                            RetrofitClient.apiService.updateCenterProfile("Bearer $it", request)
+                                        }
+                                    } catch (e: Exception) {
+                                        // Silent UI error fallback
+                                    }
+                                }
+                            },   
                             onUpdateAchievements = { achievements = it },
                             onUpdateImage = { selectedImageUri = it },
                             onUpdateHours = { day, hours -> 

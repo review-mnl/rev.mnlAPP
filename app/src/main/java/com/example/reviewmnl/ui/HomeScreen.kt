@@ -38,6 +38,9 @@ import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.BorderColor
 import kotlin.math.floor
 
+import com.example.reviewmnl.data.api.RetrofitClient
+import kotlinx.coroutines.launch
+
 // Data models
 data class Category(val name: String, val icon: ImageVector)
 data class ReviewCenter(
@@ -48,7 +51,8 @@ data class ReviewCenter(
     val description: String,
     val about: String,
     val achievements: List<String>,
-    val programs: List<String>
+    val programs: List<String>,
+    val id: Int = 0 // Adding ID to link with backend correctly
 )
 
 // Shared data
@@ -195,6 +199,43 @@ fun HomeScreen(
     onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
+    
+    // Fetch real data from the API
+    var liveCenters by remember { mutableStateOf<List<ReviewCenter>>(emptyList()) }
+    var isLoadingCenters by remember { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getApprovedCenters()
+                if (response.isSuccessful && response.body() != null) {
+                    val apiCenters = response.body()!!
+                    liveCenters = apiCenters.map {
+                        ReviewCenter(
+                            name = it.business_name,
+                            category = "N/A", // The backend might not return a strict tag initially
+                            rating = it.avg_rating ?: 0.0,
+                            location = it.address ?: "Philippines",
+                            description = it.description ?: "",
+                            about = "",
+                            achievements = emptyList(),
+                            programs = it.programs?.split(",") ?: emptyList(),
+                            id = it.id
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                // If it fails (e.g. no internet), we can optionally fallback to the mock reviewCenters
+                liveCenters = reviewCenters
+            } finally {
+                isLoadingCenters = false
+            }
+        }
+    }
+
+    // Determine which list to show
+    val displayCenters = if (liveCenters.isNotEmpty()) liveCenters else reviewCenters
 
     BoxWithConstraints(
         modifier = Modifier
@@ -414,14 +455,14 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 contentPadding = PaddingValues(end = 24.dp)
                             ) {
-                                items(reviewCenters) { center -> 
+                                items(displayCenters) { center ->
                                     FeaturedCard(
                                         center = center,
                                         onClick = {
                                             if (isLoggedIn) onNavigateToDetail(center.name)
                                             else Toast.makeText(context, "Please login to view details", Toast.LENGTH_SHORT).show()
                                         }
-                                    ) 
+                                    )
                                 }
                             }
                             Icon(

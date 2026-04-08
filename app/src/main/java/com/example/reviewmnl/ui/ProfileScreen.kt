@@ -42,6 +42,9 @@ import com.example.reviewmnl.R
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.MnlBlue
 
+import com.example.reviewmnl.data.api.RetrofitClient
+import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -57,12 +60,41 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     var isEditing by remember { mutableStateOf(false) }
-    
+
     // Form States
     var fullName by remember { mutableStateOf(user?.name ?: "") }
     var emailAddress by remember { mutableStateOf(user?.email ?: "") }
     var bio by remember { mutableStateOf(user?.role ?: "Student | review.mnl member") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(user?.profilePicUri?.let { Uri.parse(it) }) }
+    var userLoaded by remember { mutableStateOf(false) }
+    
+    val coroutineScope = rememberCoroutineScope()
+
+    // Load Live Profile
+    LaunchedEffect(user?.token) {
+        if (!userLoaded && user?.token != null) {
+            coroutineScope.launch {
+                try {
+                    val res = RetrofitClient.apiService.getStudentProfile("Bearer ${user.token}")
+                    if (res.isSuccessful && res.body() != null) {
+                        val body = res.body()!!
+                        
+                        fullName = listOfNotNull(body.first_name, body.last_name).joinToString(" ").trim().ifEmpty { body.email }
+                        emailAddress = body.email
+                        bio = body.bio ?: "Student"
+                        
+                        if (body.profile_picture_url != null) {
+                            selectedImageUri = Uri.parse(body.profile_picture_url)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to load live profile", Toast.LENGTH_SHORT).show()
+                } finally {
+                    userLoaded = true
+                }
+            }
+        }
+    }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -293,14 +325,39 @@ fun ProfileScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Button(
-                                    onClick = { 
+                                    onClick = {
                                         if (fullName.isNotBlank() && emailAddress.isNotBlank()) {
-                                            onUpdateUser(com.example.reviewmnl.ui.User(
-                                                name = fullName, 
-                                                email = emailAddress, 
+                                            val names = fullName.split(" ")
+                                            val firstName = names.firstOrNull() ?: ""
+                                            val lastName = if (names.size > 1) names.drop(1).joinToString(" ") else ""
+                                            
+                                            coroutineScope.launch {
+                                                try {
+                                                    user?.token?.let {
+                                                        val request = com.example.reviewmnl.data.api.models.UpdateProfileRequest(
+                                                            first_name = firstName,
+                                                            last_name = lastName,
+                                                            bio = bio
+                                                        )
+                                                        RetrofitClient.apiService.updateStudentProfile("Bearer $it", request)
+                                                    }
+                                                } catch (e: Exception) {
+                                                    // Network error fallback
+                                                }
+                                            }
+
+                                            val updatedUser = user?.copy(
+                                                name = fullName,
+                                                email = emailAddress,
                                                 role = bio,
                                                 profilePicUri = selectedImageUri?.toString()
-                                            ))
+                                            ) ?: com.example.reviewmnl.ui.User(
+                                                name = fullName,
+                                                email = emailAddress,
+                                                role = bio,
+                                                profilePicUri = selectedImageUri?.toString()
+                                            )
+                                            onUpdateUser(updatedUser)
                                             isEditing = false
                                             Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
                                         }

@@ -89,14 +89,15 @@ fun ReviewMnlApp() {
         composable("login") {
             LoginScreen(
                 onBack = { navController.popBackStack() },
-                onLoginSuccess = { email, isStudent ->
+                onLoginSuccess = { email, isStudent, token ->
                     isLoggedIn = true
                     val type = if (isStudent) UserType.STUDENT else UserType.ADMIN
                     currentUser = com.example.reviewmnl.ui.User(
                         name = if (isStudent) "Zaki The Creator" else "Review Center Admin", 
                         email = email,
                         userType = type,
-                        role = if (isStudent) "Student | review.mnl member" else "Admin | review.mnl partner"
+                        role = if (isStudent) "Student | review.mnl member" else "Admin | review.mnl partner",
+                        token = token
                     )
                     
                     Toast.makeText(context, "Welcome, $email!", Toast.LENGTH_SHORT).show()

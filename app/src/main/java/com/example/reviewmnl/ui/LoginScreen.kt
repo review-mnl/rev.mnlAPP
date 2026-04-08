@@ -32,11 +32,15 @@ import com.example.reviewmnl.ui.theme.GreyText
 import com.example.reviewmnl.ui.theme.LightBlue
 import com.example.reviewmnl.ui.theme.MnlBlue
 
+import com.example.reviewmnl.data.api.RetrofitClient
+import com.example.reviewmnl.data.api.models.LoginRequest
+import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onBack: () -> Unit,
-    onLoginSuccess: (String, Boolean) -> Unit
+    onLoginSuccess: (String, Boolean, String?) -> Unit
 ) {
     var isLoginMode by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
@@ -44,6 +48,8 @@ fun LoginScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var isStudentSelected by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -228,21 +234,44 @@ fun LoginScreen(
                             } else if (!isLoginMode && password != confirmPassword) {
                                 errorMessage = "Passwords do not match"
                             } else {
-                                onLoginSuccess(email, isStudentSelected)
+                                if (isLoginMode) {
+                                    isLoading = true
+                                    errorMessage = null
+                                    coroutineScope.launch {
+                                        try {
+                                            val response = RetrofitClient.apiService.login(LoginRequest(email, password))
+                                            if (response.isSuccessful && response.body() != null) {
+                                                val body = response.body()!!
+                                                val role = body.user?.role ?: ""
+                                                val isStudent = role == "student"
+                                                val token = body.token
+                                                
+                                                onLoginSuccess(email, isStudent, token)
+                                            } else {
+                                                errorMessage = "Invalid email or password"
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = "Network error: ${e.message}"
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                } else {
+                                    // Simulated sign up fallback
+                                    onLoginSuccess(email, isStudentSelected, null)        
+                                }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        enabled = !isLoading,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),       
                         colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (isLoginMode) "LOGIN" else "SIGN UP", fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = if (isLoginMode) "Don't have an account? Sign Up" else "Already have an account? Login",
-                        color = BluePrimary,
+                        if (isLoading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(if (isLoginMode) "LOGIN" else "SIGN UP", fontWeight = FontWeight.Bold)
+                        }
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier

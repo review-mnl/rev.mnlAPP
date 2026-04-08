@@ -10,5 +10,6 @@ data class User(
     val email: String,
     val role: String = "Student | review.mnl member",
     val profilePicUri: String? = null,
-    val userType: UserType = UserType.STUDENT
+    val userType: UserType = UserType.STUDENT,
+    val token: String? = null
 )
