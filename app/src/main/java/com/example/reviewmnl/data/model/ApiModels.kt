@@ -139,3 +139,34 @@ fun JsonElement?.toStringList(): List<String> {
         else -> emptyList()
     }
 }
+
+/**
+ * Coroutine-safe extension that wraps a Retrofit [Call] in a suspend function.
+ * Cancels the in-flight HTTP request automatically when the calling coroutine is cancelled
+ * (e.g. when the host Composable leaves the composition).
+ *
+ * Throws an [Exception] if the response is unsuccessful or the body is null.
+ */
+suspend fun <T> retrofit2.Call<T>.awaitResult(): T =
+    kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+        cont.invokeOnCancellation { cancel() }
+        enqueue(object : retrofit2.Callback<T> {
+            override fun onResponse(
+                call: retrofit2.Call<T>,
+                response: retrofit2.Response<T>
+            ) {
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    cont.resume(body, null)
+                } else {
+                    cont.resumeWith(
+                        Result.failure(Exception("API error ${response.code()}"))
+                    )
+                }
+            }
+
+            override fun onFailure(call: retrofit2.Call<T>, t: Throwable) {
+                cont.resumeWith(Result.failure(t))
+            }
+        })
+    }

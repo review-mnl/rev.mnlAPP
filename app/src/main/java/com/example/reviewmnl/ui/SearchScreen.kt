@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
 import com.example.reviewmnl.data.api.RetrofitClient
 import com.example.reviewmnl.data.model.ReviewCenterDto
+import com.example.reviewmnl.data.model.awaitResult
 import com.example.reviewmnl.data.model.toStringList
 import com.example.reviewmnl.ui.theme.BluePrimary
 import kotlin.math.roundToInt
@@ -50,52 +51,43 @@ fun SearchScreen(
 
     // Load all centers from API on first composition
     LaunchedEffect(Unit) {
-        RetrofitClient.apiService.getCenters()
-            .enqueue(object : retrofit2.Callback<List<ReviewCenterDto>> {
-                override fun onResponse(
-                    call: retrofit2.Call<List<ReviewCenterDto>>,
-                    response: retrofit2.Response<List<ReviewCenterDto>>
-                ) {
-                    if (response.isSuccessful) {
-                        val apiList = response.body()
-                        if (!apiList.isNullOrEmpty()) {
-                            allCenters = apiList.map { it.toReviewCenter() }
-                        }
-                    }
-                }
-                override fun onFailure(call: retrofit2.Call<List<ReviewCenterDto>>, t: Throwable) {
-                    /* keep local fallback */
-                }
-            })
+        try {
+            val apiList = RetrofitClient.apiService.getCenters().awaitResult()
+            if (apiList.isNotEmpty()) {
+                allCenters = apiList.map { it.toReviewCenter() }
+            }
+        } catch (_: Exception) { /* keep local fallback */ }
     }
 
-    // When the search query changes, call the API search endpoint
+    // When the search query changes, debounce then call the API search endpoint.
+    // LaunchedEffect cancels the previous coroutine (and its in-flight HTTP request)
+    // when the key (searchQuery) changes, providing automatic debouncing cancellation.
     LaunchedEffect(searchQuery) {
         if (searchQuery.length >= 2) {
+            kotlinx.coroutines.delay(300) // debounce: wait 300 ms before firing
             isSearchLoading = true
-            RetrofitClient.apiService.searchCenters(searchQuery)
-                .enqueue(object : retrofit2.Callback<List<ReviewCenterDto>> {
-                    override fun onResponse(
-                        call: retrofit2.Call<List<ReviewCenterDto>>,
-                        response: retrofit2.Response<List<ReviewCenterDto>>
-                    ) {
-                        isSearchLoading = false
-                        if (response.isSuccessful) {
-                            val apiList = response.body()
-                            if (apiList != null) {
-                                allCenters = apiList.map { it.toReviewCenter() }
-                            }
-                        }
-                    }
-                    override fun onFailure(call: retrofit2.Call<List<ReviewCenterDto>>, t: Throwable) {
-                        isSearchLoading = false
-                    }
-                })
+            try {
+                val apiList = RetrofitClient.apiService.searchCenters(searchQuery).awaitResult()
+                allCenters = apiList.map { it.toReviewCenter() }
+            } catch (_: Exception) {
+                // keep current allCenters on network error
+            } finally {
+                isSearchLoading = false
+            }
+        } else if (searchQuery.isEmpty()) {
+            // When the query is cleared, reload the full list
+            try {
+                val apiList = RetrofitClient.apiService.getCenters().awaitResult()
+                if (apiList.isNotEmpty()) allCenters = apiList.map { it.toReviewCenter() }
+            } catch (_: Exception) { /* keep current */ }
         }
     }
 
+    // Apply UI-local filters (category & rating) on top of the current allCenters list.
+    // Name/text filtering is handled server-side when searchQuery.length >= 2; for shorter
+    // queries we also filter locally so the list is never stale.
     val filteredCenters = allCenters.filter { center ->
-        val matchesSearch = searchQuery.length < 2 || center.name.contains(searchQuery, ignoreCase = true)
+        val matchesSearch = searchQuery.length >= 2 || center.name.contains(searchQuery, ignoreCase = true)
         val matchesCategory = selectedCategory == null || center.category == selectedCategory
         val matchesRating = selectedRating == null || center.rating.roundToInt() == selectedRating
         matchesSearch && matchesCategory && matchesRating
@@ -268,6 +260,13 @@ fun SearchScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Results (${filteredCenters.size})", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                        if (isSearchLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp).padding(end = 8.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        }
                         TextButton(onClick = onBack) {
                             Text("DONE", color = Color.White, fontWeight = FontWeight.Bold)
                         }

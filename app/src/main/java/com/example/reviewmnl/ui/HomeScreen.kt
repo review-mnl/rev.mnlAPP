@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
+import com.example.reviewmnl.data.api.RetrofitClient
 import com.example.reviewmnl.data.model.ReviewCenterDto
+import com.example.reviewmnl.data.model.awaitResult
 import com.example.reviewmnl.data.model.toStringList
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.BorderColor
@@ -220,24 +222,12 @@ fun HomeScreen(
 
     // Load centers from the API on first composition
     LaunchedEffect(Unit) {
-        com.example.reviewmnl.data.api.RetrofitClient.apiService.getCenters()
-            .enqueue(object : retrofit2.Callback<List<com.example.reviewmnl.data.model.ReviewCenterDto>> {
-                override fun onResponse(
-                    call: retrofit2.Call<List<com.example.reviewmnl.data.model.ReviewCenterDto>>,
-                    response: retrofit2.Response<List<com.example.reviewmnl.data.model.ReviewCenterDto>>
-                ) {
-                    if (response.isSuccessful) {
-                        val apiList = response.body()
-                        if (!apiList.isNullOrEmpty()) {
-                            featuredCenters = apiList.map { it.toReviewCenter() }
-                        }
-                    }
-                }
-                override fun onFailure(
-                    call: retrofit2.Call<List<com.example.reviewmnl.data.model.ReviewCenterDto>>,
-                    t: Throwable
-                ) { /* keep hardcoded fallback */ }
-            })
+        try {
+            val apiList = RetrofitClient.apiService.getCenters().awaitResult()
+            if (apiList.isNotEmpty()) {
+                featuredCenters = apiList.map { it.toReviewCenter() }
+            }
+        } catch (_: Exception) { /* keep hardcoded fallback */ }
     }
 
     BoxWithConstraints(

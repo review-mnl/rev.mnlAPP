@@ -1,6 +1,5 @@
 package com.example.reviewmnl.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,8 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.reviewmnl.R
 import com.example.reviewmnl.data.api.RetrofitClient
 import com.example.reviewmnl.data.local.TokenManager
 import com.example.reviewmnl.data.model.ApiMessageResponse
@@ -262,7 +258,7 @@ fun LoginScreen(
                             } else {
                                 if (!isStudentSelected) {
                                     // Review Center registration requires documents – guide user to web
-                                    errorMessage = "Review center registration requires uploading documents. Please register at review-mnl.vercel.app"
+                                    errorMessage = "Review center registration requires uploading documents. Please register at https://review-mnl.vercel.app"
                                 } else {
                                     performRegisterStudent(
                                         email = email.trim(),
@@ -358,7 +354,8 @@ private fun performRegisterStudent(
 ) {
     setLoading(true)
     setError(null)
-    // The backend expects { fullname, email, password }
+    // Derive a temporary display name from the email local-part (e.g. "john.doe@..." → "John.doe").
+    // A dedicated fullname input field can be added to the registration form in a future iteration.
     val namePart = email.substringBefore("@").replaceFirstChar { it.uppercase() }
     RetrofitClient.apiService.registerStudent(
         RegisterStudentRequest(fullname = namePart, email = email, password = password)

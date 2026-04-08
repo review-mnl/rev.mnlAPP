@@ -36,6 +36,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.reviewmnl.R
 import com.example.reviewmnl.data.api.RetrofitClient
 import com.example.reviewmnl.data.model.ReviewCenterDetailDto
+import com.example.reviewmnl.data.model.awaitResult
 import com.example.reviewmnl.data.model.toStringList
 import com.example.reviewmnl.ui.theme.BluePrimary
 import java.util.*
@@ -68,33 +69,23 @@ fun ReviewCenterDetailScreen(
     // If we have a numeric id, load full details from the API
     if (centerId != null) {
         LaunchedEffect(centerId) {
-            RetrofitClient.apiService.getCenterById(centerId)
-                .enqueue(object : retrofit2.Callback<ReviewCenterDetailDto> {
-                    override fun onResponse(
-                        call: retrofit2.Call<ReviewCenterDetailDto>,
-                        response: retrofit2.Response<ReviewCenterDetailDto>
-                    ) {
-                        if (response.isSuccessful) {
-                            response.body()?.let { dto ->
-                                center = ReviewCenter(
-                                    id = dto.id,
-                                    name = dto.businessName,
-                                    category = dto.programs.toStringList().firstOrNull() ?: "General",
-                                    rating = dto.avgRating,
-                                    location = dto.address ?: "Philippines",
-                                    description = dto.description ?: "",
-                                    about = dto.description ?: "",
-                                    achievements = dto.achievements.toStringList(),
-                                    programs = dto.programs.toStringList(),
-                                    logoUrl = dto.logoUrl
-                                )
-                            }
-                        }
-                    }
-                    override fun onFailure(call: retrofit2.Call<ReviewCenterDetailDto>, t: Throwable) {
-                        /* keep current center data */
-                    }
-                })
+            try {
+                val dto = RetrofitClient.apiService.getCenterById(centerId).awaitResult()
+                center = ReviewCenter(
+                    id = dto.id,
+                    name = dto.businessName,
+                    category = dto.programs.toStringList().firstOrNull() ?: "General",
+                    rating = dto.avgRating,
+                    location = dto.address ?: "Philippines",
+                    description = dto.description ?: "",
+                    about = dto.description ?: "",
+                    achievements = dto.achievements.toStringList(),
+                    programs = dto.programs.toStringList(),
+                    logoUrl = dto.logoUrl
+                )
+            } catch (_: Exception) {
+                /* keep current center data on error */
+            }
         }
     }
 
