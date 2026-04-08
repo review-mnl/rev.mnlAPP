@@ -27,10 +27,20 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
+import com.example.reviewmnl.data.api.RetrofitClient
+import com.example.reviewmnl.data.local.TokenManager
+import com.example.reviewmnl.data.model.ApiMessageResponse
+import com.example.reviewmnl.data.model.LoginRequest
+import com.example.reviewmnl.data.model.LoginResponse
+import com.example.reviewmnl.data.model.RegisterStudentRequest
 import com.example.reviewmnl.ui.theme.BluePrimary
 import com.example.reviewmnl.ui.theme.GreyText
 import com.example.reviewmnl.ui.theme.LightBlue
 import com.example.reviewmnl.ui.theme.MnlBlue
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +54,8 @@ fun LoginScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var isStudentSelected by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -106,6 +118,16 @@ fun LoginScreen(
                         Text(
                             text = errorMessage!!,
                             color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    }
+
+                    // Success Message (e.g. after registration)
+                    if (successMessage != null) {
+                        Text(
+                            text = successMessage!!,
+                            color = Color(0xFF2E7D32),
                             fontSize = 12.sp,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
@@ -177,6 +199,7 @@ fun LoginScreen(
                         onValueChange = { 
                             email = it
                             errorMessage = null
+                            successMessage = null
                         },
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         placeholder = { Text("Enter your email", fontSize = 14.sp) },
@@ -192,6 +215,7 @@ fun LoginScreen(
                         onValueChange = { 
                             password = it
                             errorMessage = null
+                            successMessage = null
                         },
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         placeholder = { Text("Enter your password", fontSize = 14.sp) },
@@ -222,20 +246,53 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Button(
-                        onClick = { 
+                        onClick = {
                             if (email.isBlank() || password.isBlank()) {
                                 errorMessage = "Please fill in all fields"
                             } else if (!isLoginMode && password != confirmPassword) {
                                 errorMessage = "Passwords do not match"
+                            } else if (isLoginMode) {
+                                performLogin(
+                                    email = email.trim(),
+                                    password = password,
+                                    setLoading = { isLoading = it },
+                                    setError = { errorMessage = it },
+                                    onSuccess = onLoginSuccess
+                                )
                             } else {
-                                onLoginSuccess(email, isStudentSelected)
+                                if (!isStudentSelected) {
+                                    // Review Center registration requires documents – guide user to web
+                                    errorMessage = "Review center registration requires uploading documents. Please register at review-mnl.vercel.app"
+                                } else {
+                                    performRegisterStudent(
+                                        email = email.trim(),
+                                        password = password,
+                                        setLoading = { isLoading = it },
+                                        setError = { errorMessage = it },
+                                        onSuccess = {
+                                            successMessage = "Account created! Please check your email to verify before logging in."
+                                            isLoginMode = true
+                                            password = ""
+                                            confirmPassword = ""
+                                        }
+                                    )
+                                }
                             }
                         },
+                        enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (isLoginMode) "LOGIN" else "SIGN UP", fontWeight = FontWeight.Bold)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(if (isLoginMode) "LOGIN" else "SIGN UP", fontWeight = FontWeight.Bold)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -249,8 +306,9 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                             .clickable { 
-                                isLoginMode = !isLoginMode 
+                                isLoginMode = !isLoginMode
                                 errorMessage = null
+                                successMessage = null
                             }
                     )
                 }
@@ -258,3 +316,76 @@ fun LoginScreen(
         }
     }
 }
+
+/** Calls POST /api/auth/login and handles the response. */
+private fun performLogin(
+    email: String,
+    password: String,
+    setLoading: (Boolean) -> Unit,
+    setError: (String?) -> Unit,
+    onSuccess: (String, Boolean) -> Unit
+) {
+    setLoading(true)
+    setError(null)
+    RetrofitClient.apiService.login(LoginRequest(email, password))
+        .enqueue(object : Callback<LoginResponse> {
+            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                setLoading(false)
+                if (response.isSuccessful) {
+                    val body = response.body() ?: return
+                    TokenManager.token = body.token
+                    val isStudent = body.user.role == "student"
+                    onSuccess(body.user.email, isStudent)
+                } else {
+                    setError(parseApiError(response.errorBody()?.string(), "Login failed. Please try again."))
+                }
+            }
+
+            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                setLoading(false)
+                setError("Network error. Please check your connection.")
+            }
+        })
+}
+
+/** Calls POST /api/auth/register/student and handles the response. */
+private fun performRegisterStudent(
+    email: String,
+    password: String,
+    setLoading: (Boolean) -> Unit,
+    setError: (String?) -> Unit,
+    onSuccess: () -> Unit
+) {
+    setLoading(true)
+    setError(null)
+    // The backend expects { fullname, email, password }
+    val namePart = email.substringBefore("@").replaceFirstChar { it.uppercase() }
+    RetrofitClient.apiService.registerStudent(
+        RegisterStudentRequest(fullname = namePart, email = email, password = password)
+    ).enqueue(object : Callback<ApiMessageResponse> {
+        override fun onResponse(call: Call<ApiMessageResponse>, response: Response<ApiMessageResponse>) {
+            setLoading(false)
+            if (response.isSuccessful) {
+                onSuccess()
+            } else {
+                setError(parseApiError(response.errorBody()?.string(), "Registration failed. Please try again."))
+            }
+        }
+
+        override fun onFailure(call: Call<ApiMessageResponse>, t: Throwable) {
+            setLoading(false)
+            setError("Network error. Please check your connection.")
+        }
+    })
+}
+
+/** Extracts the `message` field from a JSON error response body, or returns [fallback]. */
+private fun parseApiError(errorBody: String?, fallback: String): String {
+    if (errorBody.isNullOrBlank()) return fallback
+    return try {
+        JSONObject(errorBody).optString("message", fallback)
+    } catch (e: Exception) {
+        fallback
+    }
+}
+

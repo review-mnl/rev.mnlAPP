@@ -27,6 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.reviewmnl.R
+import com.example.reviewmnl.data.api.RetrofitClient
+import com.example.reviewmnl.data.model.ReviewCenterDto
+import com.example.reviewmnl.data.model.toStringList
 import com.example.reviewmnl.ui.theme.BluePrimary
 import kotlin.math.roundToInt
 
@@ -42,9 +45,57 @@ fun SearchScreen(
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedRating by remember { mutableStateOf<Int?>(null) }
     var showFilters by remember { mutableStateOf(false) }
+    var allCenters by remember { mutableStateOf(reviewCenters) }
+    var isSearchLoading by remember { mutableStateOf(false) }
 
-    val filteredCenters = reviewCenters.filter { center ->
-        val matchesSearch = center.name.contains(searchQuery, ignoreCase = true)
+    // Load all centers from API on first composition
+    LaunchedEffect(Unit) {
+        RetrofitClient.apiService.getCenters()
+            .enqueue(object : retrofit2.Callback<List<ReviewCenterDto>> {
+                override fun onResponse(
+                    call: retrofit2.Call<List<ReviewCenterDto>>,
+                    response: retrofit2.Response<List<ReviewCenterDto>>
+                ) {
+                    if (response.isSuccessful) {
+                        val apiList = response.body()
+                        if (!apiList.isNullOrEmpty()) {
+                            allCenters = apiList.map { it.toReviewCenter() }
+                        }
+                    }
+                }
+                override fun onFailure(call: retrofit2.Call<List<ReviewCenterDto>>, t: Throwable) {
+                    /* keep local fallback */
+                }
+            })
+    }
+
+    // When the search query changes, call the API search endpoint
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.length >= 2) {
+            isSearchLoading = true
+            RetrofitClient.apiService.searchCenters(searchQuery)
+                .enqueue(object : retrofit2.Callback<List<ReviewCenterDto>> {
+                    override fun onResponse(
+                        call: retrofit2.Call<List<ReviewCenterDto>>,
+                        response: retrofit2.Response<List<ReviewCenterDto>>
+                    ) {
+                        isSearchLoading = false
+                        if (response.isSuccessful) {
+                            val apiList = response.body()
+                            if (apiList != null) {
+                                allCenters = apiList.map { it.toReviewCenter() }
+                            }
+                        }
+                    }
+                    override fun onFailure(call: retrofit2.Call<List<ReviewCenterDto>>, t: Throwable) {
+                        isSearchLoading = false
+                    }
+                })
+        }
+    }
+
+    val filteredCenters = allCenters.filter { center ->
+        val matchesSearch = searchQuery.length < 2 || center.name.contains(searchQuery, ignoreCase = true)
         val matchesCategory = selectedCategory == null || center.category == selectedCategory
         val matchesRating = selectedRating == null || center.rating.roundToInt() == selectedRating
         matchesSearch && matchesCategory && matchesRating
@@ -230,7 +281,10 @@ fun SearchScreen(
                         filteredCenters.forEach { center ->
                             LargeReviewCenterCard(
                                 center = center,
-                                onClick = { onNavigateToDetail(center.name) }
+                                onClick = {
+                                    val dest = if (center.id > 0) center.id.toString() else center.name
+                                    onNavigateToDetail(dest)
+                                }
                             )
                         }
                     }

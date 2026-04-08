@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.reviewmnl.data.local.TokenManager
 import com.example.reviewmnl.ui.HomeScreen
 import com.example.reviewmnl.ui.LoginScreen
 import com.example.reviewmnl.ui.SearchScreen
@@ -25,6 +26,8 @@ import com.example.reviewmnl.ui.theme.ReviewmnlTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize TokenManager so it can persist the JWT token across sessions
+        TokenManager.init(this)
         enableEdgeToEdge()
         setContent {
             ReviewmnlTheme {
@@ -40,6 +43,12 @@ fun ReviewMnlApp() {
     var isLoggedIn by remember { mutableStateOf(false) }
     var currentUser by remember { mutableStateOf<com.example.reviewmnl.ui.User?>(null) }
     val context = LocalContext.current
+
+    fun performLogout() {
+        isLoggedIn = false
+        currentUser = null
+        TokenManager.clear()
+    }
     
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
@@ -47,16 +56,15 @@ fun ReviewMnlApp() {
                 isLoggedIn = isLoggedIn,
                 currentUser = currentUser,
                 onNavigateToLogin = { navController.navigate("login") },
-                onLogout = { 
-                    isLoggedIn = false
-                    currentUser = null
+                onLogout = {
+                    performLogout()
                     Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
                 },
                 onNavigateToSearch = {
                     navController.navigate("search")
                 },
-                onNavigateToDetail = { centerName ->
-                    navController.navigate("detail/$centerName")
+                onNavigateToDetail = { centerIdentifier ->
+                    navController.navigate("detail/$centerIdentifier")
                 },
                 onNavigateToMessages = {
                     if (isLoggedIn) {
@@ -93,7 +101,7 @@ fun ReviewMnlApp() {
                     isLoggedIn = true
                     val type = if (isStudent) UserType.STUDENT else UserType.ADMIN
                     currentUser = com.example.reviewmnl.ui.User(
-                        name = if (isStudent) "Zaki The Creator" else "Review Center Admin", 
+                        name = email.substringBefore("@").replaceFirstChar { it.uppercase() },
                         email = email,
                         userType = type,
                         role = if (isStudent) "Student | review.mnl member" else "Admin | review.mnl partner"
@@ -115,8 +123,7 @@ fun ReviewMnlApp() {
             AdminDashboardScreen(
                 user = currentUser,
                 onLogout = {
-                    isLoggedIn = false
-                    currentUser = null
+                    performLogout()
                     navController.navigate("home") {
                         popUpTo("home") { inclusive = true }
                     }
@@ -142,8 +149,8 @@ fun ReviewMnlApp() {
                 onNavigateToContact = {
                     navController.navigate("contact")
                 },
-                onNavigateToDetail = { centerName ->
-                    navController.navigate("detail/$centerName")
+                onNavigateToDetail = { centerIdentifier ->
+                    navController.navigate("detail/$centerIdentifier")
                 }
             )
         }
@@ -177,7 +184,7 @@ fun ReviewMnlApp() {
                     }
                 },
                 onLogout = {
-                    isLoggedIn = false
+                    performLogout()
                     navController.navigate("home") {
                         popUpTo("home") { inclusive = true }
                     }
@@ -202,11 +209,9 @@ fun ReviewMnlApp() {
                 onNavigateToContact = { navController.navigate("contact") },
                 isLoggedIn = isLoggedIn,
                 onLogout = {
-                    isLoggedIn = false
-                    currentUser = null
+                    performLogout()
                     navController.navigate("home") { popUpTo("home") { inclusive = true } }
-                }
-                ,
+                },
                 onUpdateUser = { updated ->
                     currentUser = updated
                 }
@@ -234,8 +239,8 @@ fun ReviewMnlApp() {
                 onNavigateToSearch = { navController.navigate("search") },
                 onNavigateToLogin = { navController.navigate("login") },
                 isLoggedIn = isLoggedIn,
-                onLogout = { 
-                    isLoggedIn = false 
+                onLogout = {
+                    performLogout()
                     navController.navigate("home") { popUpTo("home") { inclusive = true } }
                 }
             )
